@@ -1,0 +1,33 @@
+//--------------------------------------
+//--- 010 Editor v3.2.2 Binary Template
+//
+// File: m3-sdsMemory.bt // template for decompressed blocks(/chunks) memory dump
+// Author: chipsman
+//--------------------------------------
+
+#define FILE_COUNT 142 // see in archive header of sds file
+
+#define HEADER_SIZE 36
+
+struct FileHeader {
+    DWORD dwTypeId;
+    DWORD dwSize; // includes headers (such as the first 30 bytes)
+    WORD wVersion;
+    DWORD _fA;  // was SlotRamRequired;   // it looks like _fA and _fE is one 8-byte hash64 value or GUID
+    DWORD _fE;  // was SlotVramRequired;
+    DWORD _f12; // was OtherRamRequired;
+    DWORD _f16; // was OtherVramRequired;
+    DWORD _f1A; // == 0 when wVersion is 3, and some "valuable" value when wVersion is 10 
+    WORD  _f1E;  
+    DWORD _f20; // was file header checksum // it looks like now there is the same, but all my calculated checksums not match this value  
+};
+
+struct SdsMemory {
+    struct {
+        FileHeader header;
+        byte data[header.dwSize - HEADER_SIZE]<optimize=false>;
+    } files[FILE_COUNT]<optimize=false>;
+};
+
+SetBackColor (0xFFC0C0);
+SdsMemory mem;
