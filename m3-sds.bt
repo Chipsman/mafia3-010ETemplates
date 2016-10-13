@@ -1,0 +1,123 @@
+//--------------------------------------
+//--- 010 Editor v3.2.2 Binary Template
+//
+// File: m2-sds.bt
+// Author: chipsman
+// see Gibbed sources for more info http://svn.gib.me/public/illusion/trunk/
+//--------------------------------------
+
+typedef struct {
+    DWORD length;
+    char str[length]<optimize=false>;
+} StringU32<read=StringU32_read>;
+string StringU32_read (StringU32& str) {
+    string s;
+    if (str.length > 0)
+      SPrintf (s, "%s", str.str);
+    else
+      s = "";
+    return s;
+};
+
+struct ArchiveHeader {
+    DWORD dwResourceTypeTableOffset;  // _f0;
+    DWORD dwBlockTableOffset;         // _f4;
+    DWORD dwXmlOffset;                // _f8;
+    DWORD dwSlotRamRequired;          // _fC;
+    DWORD dwSlotVramRequired;         // _f10;
+    DWORD dwOtherRamRequired;         // _f14;
+    DWORD dwOtherVramRequired;        // _f18;
+    DWORD _f1C;// Unknown1C; // flags of some sort : see note 2 
+    byte  _f20[16];
+    DWORD dwFileCount;                 // _f30;
+    //
+    DWORD dwArchiveHeaderChecksum; // FNVHash32 of the all header bytes
+};
+
+typedef struct {
+    DWORD   dwId; // _f0;
+    StringU32  sName;
+    DWORD   dwParent;
+} ResourceType<read=ResourceType_read>;
+string ResourceType_read (ResourceType& r) {
+    string s;
+    if (r.sName.length > 0)
+      SPrintf (s, "%s", r.sName.str);
+    else
+      s = "";
+    return s;
+};
+
+
+struct CompressedBlockHeader {
+    DWORD dwUncompressedSize;
+    DWORD _f4; // 32
+    WORD  _f8;
+    WORD  _fA;
+    WORD  _fC;
+    ubyte _fE;
+    ubyte _fF;
+    WORD  wCompressedSize;
+    WORD  _f12;
+    DWORD _f14;
+    DWORD _f18;
+    DWORD _f1C;
+};
+
+struct CompressedBlock {
+    CompressedBlockHeader blockHeader;        
+    BYTE CompressedData[blockHeader.wCompressedSize];
+};
+
+struct Blocks {
+    DWORD dwMagic;
+    DWORD dwDefaultBlockSize;
+    BYTE  nbFlags;
+    
+    local byte reachEnd = 0;
+    while (reachEnd == 0) 
+    {        
+        struct {
+            DWORD dwSize;
+            BYTE  bIsCompressed;
+            if (dwSize == 0)
+                reachEnd = 1;
+            if (bIsCompressed==1)
+                CompressedBlock block;
+            else if (reachEnd == 0)
+                BYTE Data[dwSize];
+        } block;
+           
+    }   
+};
+
+struct SDS {
+    char dwMagic[4];
+    DWORD dwVersion;
+    char dwPlatform[4];
+    DWORD dwChecksum; //+0xC // FNVHash32 from bytes of dwMagic, dwVersion and dwPlatform
+
+    // read header
+    ArchiveHeader header;
+    
+    // read resource types
+    FSeek(header.dwResourceTypeTableOffset);
+    DWORD ResourceTypesCount;
+    ResourceType ResourceTypeList[ResourceTypesCount]<optimize=false>;
+
+    // read xml
+    if (header.dwXmlOffset > 0) {    
+        local DWORD xmlSize = FileSize() - header.dwXmlOffset;
+        if (xmlSize > 0) { 
+            FSeek(header.dwXmlOffset);
+            byte xml[xmlSize]<optimize=false>;
+        }
+    }
+
+    // read blocks
+    FSeek(header.dwBlockTableOffset);
+    Blocks blocksData;
+};
+
+SetBackColor (0xFFC0C0);
+SDS sds;
