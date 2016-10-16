@@ -1,0 +1,48 @@
+//--------------------------------------
+//--- 010 Editor v5.0 Binary Template
+//
+// File: m3-pck.bt // audio package file
+// Author: chipsman
+// Revision:
+// Purpose:
+//--------------------------------------
+
+struct Header
+{
+    char    dwMagic[4];   // AKPK (0x4B504B41h)
+    DWORD   dwHeaderSize; // +0x4
+    DWORD   _f8;
+    DWORD   _fC;
+    DWORD   _f10;
+    DWORD   _f14;
+    DWORD   _f18;
+    DWORD   _f1C;
+    DWORD   _f20;
+    DWORD   _f24;
+    DWORD   _f28;
+    DWORD   _f2C;
+    DWORD   _f30;
+    DWORD   dwFileCount;    //+0x34
+};
+
+struct FileEntry
+{
+    DWORD   dwHash;     // +0x0
+    DWORD   _f4;        // always 16,  block size ? or aligment ?
+    DWORD   dwSize;     // +0x8
+    DWORD   dwOffsetInBlocks; //+0xC // block size == 16
+    DWORD   _f10;       // always 0, // or dwOffsetInBlocks is QWORD
+
+    local int64 currentOffset = FTell();
+    FSeek(dwOffsetInBlocks * 16);
+    ubyte   fileData[dwSize]<optimize=false>;
+    FSeek(currentOffset);
+};
+
+struct AKPK {
+    Header header;
+    FileEntry files[header.dwFileCount]<optimize=false>;
+};
+
+SetBackColor (0xFFC0C0);
+AKPK akpk;
